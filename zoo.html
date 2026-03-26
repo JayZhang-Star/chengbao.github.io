@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>橙子的双语乐园</title>
+    <style>
+        /* --- 全局护眼样式 --- */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #fdf6e3;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #d33682;
+            font-size: 2.2em;
+            margin-bottom: 25px;
+        }
+
+        /* --- 主题切换按钮区：支持横向滚动 --- */
+        .theme-buttons {
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .theme-btn {
+            background-color: #2aa198;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1.1em;
+            margin: 5px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.05);
+            background-color: #219187;
+        }
+
+        .theme-btn.active {
+            background-color: #cb4b16;
+        }
+
+        /* --- 单词卡片网格 --- */
+        .word-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* --- 单个单词卡片样式 --- */
+        .word-card {
+            background-color: white;
+            border-radius: 18px;
+            padding: 20px 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+
+        .word-card:active {
+            transform: scale(0.95);
+        }
+
+        .word-emoji {
+            font-size: 3.5em;
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+
+        .word-text {
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #073642;
+            margin: 5px 0;
+        }
+
+        .word-chinese {
+            font-size: 1.1em;
+            color: #657b83;
+        }
+
+        .hint {
+            color: #93a1a1;
+            margin-top: 25px;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎈橙子的双语乐园🔊</h1>
+
+    <!-- 主题切换区 -->
+    <div class="theme-buttons">
+        <button class="theme-btn active" onclick="switchTheme('numbers', this)">🔢 数字</button>
+        <button class="theme-btn" onclick="switchTheme('colors', this)">🌈 颜色</button>
+        <button class="theme-btn" onclick="switchTheme('zoo', this)">🦁 动物园</button>
+        <button class="theme-btn" onclick="switchTheme('sea', this)">🐳 海洋动物</button>
+        <button class="theme-btn" onclick="switchTheme('farm', this)">🐄 农场动物</button>
+        <button class="theme-btn" onclick="switchTheme('fruits', this)">🍎 水果</button>
+        <button class="theme-btn" onclick="switchTheme('vegetables', this)">🥬 蔬菜</button>
+        <button class="theme-btn" onclick="switchTheme('body', this)">👋 身体部位</button>
+        <button class="theme-btn" onclick="switchTheme('transport', this)">🚗 交通工具</button>
+        <button class="theme-btn" onclick="switchTheme('clothes', this)">👕 衣物</button>
+        <button class="theme-btn" onclick="switchTheme('family', this)">👨‍👩‍👧 家庭成员</button>
+        <button class="theme-btn" onclick="switchTheme('food', this)">🍰 食物零食</button>
+    </div>
+
+    <!-- 单词展示区 -->
+    <div id="wordContainer" class="word-grid">
+        <!-- 单词卡片JS动态插入 -->
+    </div>
+
+    <p class="hint">👆 点击卡片，先听中文，再听英语！</p>
+
+    <script>
+        // --- 全局语音变量：存储优选的中文/英文语音包 ---
+        let zhVoice = null;
+        let enVoice = null;
+
+        // --- 1. 全量单词库：12大主题，每个主题固定20个幼儿启蒙单词 ---
+        const wordData = {
+            // 1. 数字 1-20（固定20个）
+            numbers: [
+                { emoji: '1️⃣', en: 'One', zh: '一' },
+                { emoji: '2️⃣', en: 'Two', zh: '二' },
+                { emoji: '3️⃣', en: 'Three', zh: '三' },
+                { emoji: '4️⃣', en: 'Four', zh: '四' },
+                { emoji: '5️⃣', en: 'Five', zh: '五' },
+                { emoji: '6️⃣', en: 'Six', zh: '六' },
+                { emoji: '7️⃣', en: 'Seven', zh: '七' },
+                { emoji: '8️⃣', en: 'Eight', zh: '八' },
+                { emoji: '9️⃣', en: 'Nine', zh: '九' },
+                { emoji: '🔟', en: 'Ten', zh: '十' },
+                { emoji: '1️⃣1️⃣', en: 'Eleven', zh: '十一' },
+                { emoji: '1️⃣2️⃣', en: 'Twelve', zh: '十二' },
+                { emoji: '1️⃣3️⃣', en: 'Thirteen', zh: '十三' },
+                { emoji: '1️⃣4️⃣', en: 'Fourteen', zh: '十四' },
+                { emoji: '1️⃣5️⃣', en: 'Fifteen', zh: '十五' },
+                { emoji: '1️⃣6️⃣', en: 'Sixteen', zh: '十六' },
+                { emoji: '1️⃣7️⃣', en: 'Seventeen', zh: '十七' },
+                { emoji: '1️⃣8️⃣', en: 'Eighteen', zh: '十八' },
+                { emoji: '1️⃣9️⃣', en: 'Nineteen', zh: '十九' },
+                { emoji: '2️⃣0️⃣', en: 'Twenty', zh: '二十' }
+            ],
+            // 2. 颜色（固定20个）
+            colors: [
+                { emoji: '🔴', en: 'Red', zh: '红色' },
+                { emoji: '🟡', en: 'Yellow', zh: '黄色' },
+                { emoji: '🔵', en: 'Blue', zh: '蓝色' },
+                { emoji: '🟢', en: 'Green', zh: '绿色' },
+                { emoji: '🟣', en: 'Purple', zh: '紫色' },
+                { emoji: '🟠', en: 'Orange', zh: '橙色' },
+                { emoji: '⚫', en: 'Black', zh: '黑色' },
+                { emoji: '⚪', en: 'White', zh: '白色' },
+                { emoji: '🟤', en: 'Brown', zh: '棕色' },
+                { emoji: '💗', en: 'Pink', zh: '粉色' },
+                { emoji: '🌫️', en: 'Gray', zh: '灰色' },
+                { emoji: '🫒', en: 'Olive', zh: '橄榄绿' },
+                { emoji: '🍷', en: 'Maroon', zh: '酒红色' },
+                { emoji: '🩵', en: 'Cyan', zh: '青色' },
+                { emoji: '🍂', en: 'Tan', zh: '黄褐色' },
+                { emoji: '✨', en: 'Gold', zh: '金色' },
+                { emoji: '银色', en: 'Silver', zh: '银色' },
+                { emoji: '米色', en: 'Beige', zh: '米色' }
+            ],
+            // 3. 动物园动物（固定20个）
+            zoo: [
+                { emoji: '🐯', en: 'Tiger', zh: '老虎' },
+                { emoji: '🦁', en: 'Lion', zh: '狮子' },
+                { emoji: '🐘', en: 'Elephant', zh: '大象' },
+                { emoji: '🐼', en: 'Panda', zh: '熊猫' },
+                { emoji: '🦒', en: 'Giraffe', zh: '长颈鹿' },
+                { emoji: '🦓', en: 'Zebra', zh: '斑马' },
+                { emoji: '🐻', en: 'Bear', zh: '熊' },
+                { emoji: '🐵', en: 'Monkey', zh: '猴子' },
+                { emoji: '🦊', en: 'Fox', zh: '狐狸' },
+                { emoji: '🐺', en: 'Wolf', zh: '狼' },
+                { emoji: '🦘', en: 'Kangaroo', zh: '袋鼠' },
+                { emoji: '🦛', en: 'Hippo', zh: '河马' },
+                { emoji: '🦏', en: 'Rhino', zh: '犀牛' },
+                { emoji: '🐪', en: 'Camel', zh: '骆驼' },
+                { emoji: '🦌', en: 'Deer', zh: '鹿' },
+                { emoji: '🦚', en: 'Peacock', zh: '孔雀' },
+                { emoji: '🐧', en: 'Penguin', zh: '企鹅' },
+                { emoji: '🐿️', en: 'Squirrel', zh: '松鼠' },
+                { emoji: '🦔', en: 'Hedgehog', zh: '刺猬' },
+                { emoji: '🐊', en: 'Crocodile', zh: '鳄鱼' }
+            ],
+            // 4. 海洋动物（固定20个）
+            sea: [
+                { emoji: '🐟', en: 'Fish', zh: '鱼' },
+                { emoji: '🐠', en: 'Goldfish', zh: '金鱼' },
+                { emoji: '🐳', en: 'Whale', zh: '鲸鱼' },
+                { emoji: '🐬', en: 'Dolphin', zh: '海豚' },
+                { emoji: '🦈', en: 'Shark', zh: '鲨鱼' },
+                { emoji: '🐙', en: 'Octopus', zh: '章鱼' },
+                { emoji: '🦀', en: 'Crab', zh: '螃蟹' },
+                { emoji: '🐢', en: 'Turtle', zh: '海龟' },
+                { emoji: '🦑', en: 'Squid', zh: '鱿鱼' },
+                { emoji: '⭐', en: 'Starfish', zh: '海星' },
+                { emoji: '🪼', en: 'Jellyfish', zh: '水母' },
+                { emoji: '🐴', en: 'Seahorse', zh: '海马' },
+                { emoji: '🦭', en: 'Sea lion', zh: '海狮' },
+                { emoji: '🦦', en: 'Seal', zh: '海豹' },
+                { emoji: '🤡', en: 'Clownfish', zh: '小丑鱼' },
+                { emoji: '🦞', en: 'Lobster', zh: '龙虾' },
+                { emoji: '🐚', en: 'Seashell', zh: '贝壳' },
+                { emoji: '🐟', en: 'Sardine', zh: '沙丁鱼' },
+                { emoji: '海象', en: 'Walrus', zh: '海象' },
+                { emoji: '鳐鱼', en: 'Ray', zh: '鳐鱼' }
+            ],
+            // 5. 农场动物（固定20个）
+            farm: [
+                { emoji: '🐄', en: 'Cow', zh: '奶牛' },
+                { emoji: '🐎', en: 'Horse', zh: '马' },
+                { emoji: '🐑', en: 'Sheep', zh: '绵羊' },
+                { emoji: '🐐', en: 'Goat', zh: '山羊' },
+                { emoji: '🐷', en: 'Pig', zh: '猪' },
+                { emoji: '🐔', en: 'Chicken', zh: '小鸡' },
+                { emoji: '🐓', en: 'Rooster', zh: '公鸡' },
+                { emoji: '🐔', en: 'Hen', zh: '母鸡' },
+                { emoji: '🦃', en: 'Turkey', zh: '火鸡' },
+                { emoji: '🦆', en: 'Duck', zh: '鸭子' },
+                { emoji: '🐰', en: 'Rabbit', zh: '兔子' },
+                { emoji: '🦢', en: 'Goose', zh: '鹅' },
+                { emoji: '🦙', en: 'Alpaca', zh: '羊驼' },
+                { emoji: '🐝', en: 'Bee', zh: '蜜蜂' },
+                { emoji: '🕊️', en: 'Pigeon', zh: '鸽子' },
+                { emoji: '🐭', en: 'Mouse', zh: '老鼠' }
+            ],
+            // 6. 水果（固定20个）
+            fruits: [
+                { emoji: '🍎', en: 'Apple', zh: '苹果' },
+                { emoji: '🍌', en: 'Banana', zh: '香蕉' },
+                { emoji: '🍊', en: 'Orange', zh: '橙子' },
+                { emoji: '🍇', en: 'Grape', zh: '葡萄' },
+                { emoji: '🍓', en: 'Strawberry', zh: '草莓' },
+                { emoji: '🍉', en: 'Watermelon', zh: '西瓜' },
+                { emoji: '🍑', en: 'Peach', zh: '桃子' },
+                { emoji: '🍒', en: 'Cherry', zh: '樱桃' },
+                { emoji: '🥝', en: 'Kiwi', zh: '猕猴桃' },
+                { emoji: '🍍', en: 'Pineapple', zh: '菠萝' },
+                { emoji: '🍋', en: 'Lemon', zh: '柠檬' },
+                { emoji: '🍐', en: 'Pear', zh: '梨' },
+                { emoji: '🥭', en: 'Mango', zh: '芒果' },
+                { emoji: '🫐', en: 'Blueberry', zh: '蓝莓' },
+                { emoji: '🍓', en: 'Raspberry', zh: '树莓' },
+                { emoji: '🥥', en: 'Coconut', zh: '椰子' },
+                { emoji: '石榴', en: 'Pomegranate', zh: '石榴' },
+                { emoji: '西柚', en: 'Grapefruit', zh: '西柚' }
+            ],
+            // 7. 蔬菜（固定20个）
+            vegetables: [
+                { emoji: '🥬', en: 'Cabbage', zh: '白菜' },
+                { emoji: '🥕', en: 'Carrot', zh: '胡萝卜' },
+                { emoji: '🍅', en: 'Tomato', zh: '西红柿' },
+                { emoji: '🥒', en: 'Cucumber', zh: '黄瓜' },
+                { emoji: '🌽', en: 'Corn', zh: '玉米' },
+                { emoji: '🥔', en: 'Potato', zh: '土豆' },
+                { emoji: '🧅', en: 'Onion', zh: '洋葱' },
+                { emoji: '🍆', en: 'Eggplant', zh: '茄子' },
+                { emoji: '🌶️', en: 'Pepper', zh: '辣椒' },
+                { emoji: '🥦', en: 'Broccoli', zh: '西兰花' },
+                { emoji: '🍄', en: 'Mushroom', zh: '蘑菇' },
+                { emoji: '🥬', en: 'Lettuce', zh: '生菜' },
+                { emoji: '🫛', en: 'Pea', zh: '豌豆' },
+                { emoji: '🎃', en: 'Pumpkin', zh: '南瓜' },
+                { emoji: '🥦', en: 'Cauliflower', zh: '花菜' },
+                { emoji: '🥕', en: 'Radish', zh: '水萝卜' },
+                { emoji: '🫛', en: 'Green bean', zh: '豆角' },
+                { emoji: '🥬', en: 'Celery', zh: '芹菜' },
+                { emoji: '🧄', en: 'Garlic', zh: '大蒜' },
+                { emoji: '🥬', en: 'Spinach', zh: '菠菜' }
+            ],
+            // 8. 身体部位（固定20个）
+            body: [
+                { emoji: '👋', en: 'Hand', zh: '手' },
+                { emoji: '🦶', en: 'Foot', zh: '脚' },
+                { emoji: '👂', en: 'Ear', zh: '耳朵' },
+                { emoji: '👀', en: 'Eye', zh: '眼睛' },
+                { emoji: '👃', en: 'Nose', zh: '鼻子' },
+                { emoji: '👄', en: 'Mouth', zh: '嘴巴' },
+                { emoji: '👤', en: 'Head', zh: '头' },
+                { emoji: '💇', en: 'Hair', zh: '头发' },
+                { emoji: '🦷', en: 'Tooth', zh: '牙齿' },
+                { emoji: '💪', en: 'Arm', zh: '胳膊' },
+                { emoji: '🦵', en: 'Leg', zh: '腿' },
+                { emoji: '🖐️', en: 'Finger', zh: '手指' },
+                { emoji: '🦶', en: 'Toe', zh: '脚趾' },
+                { emoji: '🦵', en: 'Knee', zh: '膝盖' },
+                { emoji: '🧑', en: 'Face', zh: '脸' },
+                { emoji: '🧑', en: 'Neck', zh: '脖子' },
+                { emoji: '👶', en: 'Tummy', zh: '肚子' },
+                { emoji: '👅', en: 'Tongue', zh: '舌头' },
+                { emoji: '🧑', en: 'Shoulder', zh: '肩膀' }
+            ],
+            // 9. 交通工具（固定20个）
+            transport: [
+                { emoji: '🚗', en: 'Car', zh: '小汽车' },
+                { emoji: '🚌', en: 'Bus', zh: '公共汽车' },
+                { emoji: '🚂', en: 'Train', zh: '火车' },
+                { emoji: '✈️', en: 'Plane', zh: '飞机' },
+                { emoji: '🚢', en: 'Ship', zh: '轮船' },
+                { emoji: '🚲', en: 'Bike', zh: '自行车' },
+                { emoji: '🚜', en: 'Tractor', zh: '拖拉机' },
+                { emoji: '🚑', en: 'Ambulance', zh: '救护车' },
+                { emoji: '🚒', en: 'Fire truck', zh: '消防车' },
+                { emoji: '🚓', en: 'Police car', zh: '警车' },
+                { emoji: '🚕', en: 'Taxi', zh: '出租车' },
+                { emoji: '🏍️', en: 'Motorcycle', zh: '摩托车' },
+                { emoji: '🚇', en: 'Subway', zh: '地铁' },
+                { emoji: '🚙', en: 'Jeep', zh: '吉普车' },
+                { emoji: '🚚', en: 'Truck', zh: '卡车' },
+                { emoji: '🚁', en: 'Helicopter', zh: '直升机' },
+                { emoji: '⛵', en: 'Sailboat', zh: '帆船' },
+                { emoji: '⛴️', en: 'Ferry', zh: '渡轮' },
+                { emoji: '🚀', en: 'Rocket', zh: '火箭' },
+                { emoji: '🚐', en: 'Van', zh: '厢式货车' }
+            ],
+            // 10. 衣物（固定20个）
+            clothes: [
+                { emoji: '👕', en: 'T-shirt', zh: 'T恤' },
+                { emoji: '👔', en: 'Shirt', zh: '衬衫' },
+                { emoji: '👗', en: 'Dress', zh: '连衣裙' },
+                { emoji: '👖', en: 'Pants', zh: '裤子' },
+                { emoji: '🧥', en: 'Coat', zh: '外套' },
+                { emoji: '🧣', en: 'Scarf', zh: '围巾' },
+                { emoji: '🧤', en: 'Gloves', zh: '手套' },
+                { emoji: '👟', en: 'Shoes', zh: '鞋子' },
+                { emoji: '🧦', en: 'Socks', zh: '袜子' },
+                { emoji: '🎩', en: 'Hat', zh: '帽子' },
+                { emoji: '🧶', en: 'Sweater', zh: '毛衣' },
+                { emoji: '🩳', en: 'Shorts', zh: '短裤' },
+                { emoji: '👗', en: 'Skirt', zh: '短裙' },
+                { emoji: '🎽', en: 'Vest', zh: '背心' },
+                { emoji: '👖', en: 'Jeans', zh: '牛仔裤' },
+                { emoji: '🧥', en: 'Raincoat', zh: '雨衣' },
+                { emoji: '🥾', en: 'Rain boots', zh: '雨靴' },
+                { emoji: '🩱', en: 'Swimsuit', zh: '泳衣' },
+                { emoji: '👕', en: 'Hoodie', zh: '卫衣' },
+                { emoji: '🛌', en: 'Pajamas', zh: '睡衣' }
+            ],
+            // 11. 家庭成员（固定20个）
+            family: [
+                { emoji: '👨', en: 'Father', zh: '爸爸' },
+                { emoji: '👨', en: 'Dad', zh: '爸爸' },
+                { emoji: '👩', en: 'Mother', zh: '妈妈' },
+                { emoji: '👩', en: 'Mom', zh: '妈妈' },
+                { emoji: '👴', en: 'Grandpa', zh: '爷爷 / 外公' },
+                { emoji: '👵', en: 'Grandma', zh: '奶奶/外婆' },
+                { emoji: '👦', en: 'Brother', zh: '兄弟' },
+                { emoji: '👧', en: 'Sister', zh: '姐妹' },
+                { emoji: '👶', en: 'Baby', zh: '宝宝' },
+                { emoji: '🧔', en: 'Uncle', zh: '叔叔/舅舅' },
+                { emoji: '👩‍🦰', en: 'Aunt', zh: '阿姨/姑姑' },
+                { emoji: '🧒', en: 'Cousin', zh: '堂/表兄弟姐妹' },
+                { emoji: '👶', en: 'Son', zh: '儿子' },
+                { emoji: '👧', en: 'Daughter', zh: '女儿' },
+                { emoji: '👦', en: 'Nephew', zh: '侄子/外甥' },
+                { emoji: '👧', en: 'Niece', zh: '侄女/外甥女' },
+                { emoji: '👶', en: 'Grandson', zh: '孙子' },	
+                { emoji: '👧', en: 'Granddaughter', zh: '孙女' },
+                { emoji: '👨‍👩‍👧', en: 'Family', zh: '家庭' },
+                { emoji: '🧑‍🤝‍🧑', en: 'Friend', zh: '朋友' }
+            ],
+            // 12. 食物零食（固定20个）
+            food: [
+                { emoji: '🍚', en: 'Rice', zh: '米饭' },
+                { emoji: '🍜', en: 'Noodles', zh: '面条' },
+                { emoji: '🍞', en: 'Bread', zh: '面包' },
+                { emoji: '🥚', en: 'Egg', zh: '鸡蛋' },
+                { emoji: '🥛', en: 'Milk', zh: '牛奶' },
+                { emoji: '🧃', en: 'Juice', zh: '果汁' },
+                { emoji: '🍰', en: 'Cake', zh: '蛋糕' },
+                { emoji: '🍪', en: 'Cookie', zh: '饼干' },
+                { emoji: '🍦', en: 'Ice cream', zh: '冰淇淋' },
+                { emoji: '🍫', en: 'Chocolate', zh: '巧克力' },
+                { emoji: '🍕', en: 'Pizza', zh: '披萨' },
+                { emoji: '🍔', en: 'Hamburger', zh: '汉堡' },
+                { emoji: '🍟', en: 'French fries', zh: '薯条' },
+                { emoji: '🥪', en: 'Sandwich', zh: '三明治' },
+                { emoji: '🥟', en: 'Dumpling', zh: '饺子' },
+                { emoji: '🌭', en: 'Sausage', zh: '香肠' },
+                { emoji: '🧀', en: 'Cheese', zh: '奶酪' },
+                { emoji: '🥛', en: 'Yogurt', zh: '酸奶' },
+                { emoji: '🍿', en: 'Popcorn', zh: '爆米花' },
+                { emoji: '🍬', en: 'Candy', zh: '糖果' }
+            ]
+        };
+
+        // --- 2. 初始化优选语音包：中文女声优先 ---
+        function initVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            // 中文语音优选规则：优先选清晰女声，适配全浏览器
+            const zhPriority = ['Microsoft Huihui', 'Microsoft Yaoyao', 'Google 普通话', 'zh-CN'];
+            // 英文语音优选规则：美式女声，适配幼儿启蒙
+            const enPriority = ['Microsoft Jenny', 'Google US English', 'en-US'];
+
+            // 匹配中文语音
+            for (let name of zhPriority) {
+                const findVoice = voices.find(voice => voice.name.includes(name) && voice.lang.includes('zh-CN'));
+                if (findVoice) {
+                    zhVoice = findVoice;
+                    break;
+                }
+            }
+
+            // 匹配英文语音
+            for (let name of enPriority) {
+                const findVoice = voices.find(voice => voice.name.includes(name) && voice.lang.includes('en-US'));
+                if (findVoice) {
+                    enVoice = findVoice;
+                    break;
+                }
+            }
+        }
+
+        // 监听语音加载完成，执行初始化
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = initVoices;
+        }
+
+        // --- 3. 核心发音功能：先读中文，再读英文 ---
+        function speakBilingual(enText, zhText) {
+            if (!('speechSynthesis' in window)) {
+                alert('您的浏览器不支持语音功能，请使用 Chrome、Edge 或 Safari 浏览器！');
+                return;
+            }
+
+            speechSynthesis.cancel(); // 停止当前播放，避免声音叠加
+
+            // 第一步：先读中文
+            const utteranceZh = new SpeechSynthesisUtterance(zhText);
+            utteranceZh.lang = 'zh-CN';
+            utteranceZh.rate = 0.9; // 中文语速适中，适合幼儿
+            utteranceZh.pitch = 1.1; // 音调柔和
+            if (zhVoice) utteranceZh.voice = zhVoice; // 绑定优选女声
+
+            // 第二步：中文读完后，自动读英文
+            utteranceZh.onend = () => {
+                const utteranceEn = new SpeechSynthesisUtterance(enText);
+                utteranceEn.lang = 'en-US';
+                utteranceEn.rate = 0.8; // 英文慢速，清晰易懂
+                utteranceEn.pitch = 1.1;
+                if (enVoice) utteranceEn.voice = enVoice; // 绑定优选美式女声
+                speechSynthesis.speak(utteranceEn);
+            };
+
+            speechSynthesis.speak(utteranceZh);
+        }
+
+        // --- 4. 渲染单词卡片 ---
+        function renderWords(theme) {
+            const container = document.getElementById('wordContainer');
+            const data = wordData[theme];
+            container.innerHTML = '';
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'word-card';
+                card.onclick = () => speakBilingual(item.en, item.zh);
+
+                card.innerHTML = `
+                    <div class="word-emoji">${item.emoji}</div>
+                    <div class="word-text">${item.en}</div>
+                    <div class="word-chinese">${item.zh}</div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        // --- 5. 切换主题 ---
+        function switchTheme(theme, btnElement) {
+            const buttons = document.querySelectorAll('.theme-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            renderWords(theme);
+        }
+
+        // --- 6. 页面初始化 ---
+        window.onload = () => renderWords('numbers');
+
+    </script>
+</body>
+</html>
